@@ -24,13 +24,17 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
 
 app.get("/", (req, res) => {
-res.json({
-message: "Api is running",
-});
+  res.json({
+    message: "Api is running",
+  });
 });
 
 const PORT = process.env.PORT || 8000;
 
-app.listen(PORT, () => {
-console.log(`Server is running at ${PORT} Port`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Server is running at ${PORT} Port`);
+  });
+}
+
+module.exports = app;
