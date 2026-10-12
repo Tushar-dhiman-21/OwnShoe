@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import axios from "axios";
+import { Link } from "react-router-dom";    
+// import axios from "axios";
+import { api } from "../api";
 
 const categories = [
   {
@@ -42,9 +43,7 @@ function Categories() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/api/products"
-        );
+        const response = await api.get("/api/products");
 
         const productData = Array.isArray(response.data)
           ? response.data

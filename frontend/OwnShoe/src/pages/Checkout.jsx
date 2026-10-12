@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../api";
 import {
   ArrowLeft,
   CheckCircle,
@@ -15,7 +16,7 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = `${API_BASE_URL}/api`;
 
 // =====================================================
 // LOAD RAZORPAY CHECKOUT SCRIPT

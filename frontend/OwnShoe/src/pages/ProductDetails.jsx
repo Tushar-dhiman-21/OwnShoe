@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 
 import axios from "axios";
-
+import { api } from "../api";
 import {
   Heart,
   ZoomIn,
@@ -123,10 +123,7 @@ export default function ProductDetails() {
 
         setError("");
 
-        const response = await axios.get(
-          `http://localhost:8000/api/products/${id}`,
-        );
-
+const response = await api.get(`/api/products/${id}`);
         const data = response.data.product;
 
         setProduct(data);
@@ -153,7 +150,7 @@ export default function ProductDetails() {
       setReviewsLoading(true);
 
       const response = await axios.get(
-        `http://localhost:8000/api/reviews?product=${id}`,
+        `${API_BASE_URL}/api/reviews?product=${id}`,
       );
 
       setReviews(response.data.reviews || []);
@@ -270,15 +267,12 @@ export default function ProductDetails() {
     try {
       setReviewSubmitting(true);
 
-      const response = await axios.post("http://localhost:8000/api/reviews", {
-        user: user.id,
-
-        product: product._id,
-
-        rating: reviewRating,
-
-        text: reviewText.trim(),
-      });
+    const response = await api.post("/api/reviews", {
+  user: user.id,
+  product: product._id,
+  rating: reviewRating,
+  text: reviewText.trim(),
+});
 
       if (response.data.success) {
         setReviewSuccess("Review submitted successfully!");

@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { api } from "../api";
 
 function Register() {
   const navigate = useNavigate();
@@ -67,9 +68,7 @@ function Register() {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/auth/register",
-        {
+      const response = await api.post("/api/auth/register", {
           name,
           email,
           password,

@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-
+import { api } from "../api";
 const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:8000"
+  import.meta.env.VITE_API_URL || "http ://localhost:8000"
 ).replace(/\/$/, "");
 
 const getAuthToken = () =>

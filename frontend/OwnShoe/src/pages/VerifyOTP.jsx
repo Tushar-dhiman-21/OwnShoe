@@ -9,6 +9,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import axios from "axios";
+import { api } from "../api";
 
 const VerifyOTP = () => {
   const navigate = useNavigate();
@@ -39,13 +40,10 @@ const VerifyOTP = () => {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/auth/verify-otp",
-        {
-          email,
-          otp,
-        }
-      );
+     const response = await api.post("/api/auth/verify-otp", {
+  email,
+  otp,
+});
 
       if (response.data.success) {
         sessionStorage.setItem("resetOTP", otp);

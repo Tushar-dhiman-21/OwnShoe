@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import axios from "axios";
+import { api } from "../api";
 
 function Reviews() {
   const [reviews, setReviews] = useState([]);
@@ -9,9 +10,7 @@ function Reviews() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/api/reviews"
-        );
+        const response = await api.get("/api/reviews");
 
         setReviews(response.data.reviews || []);
       } catch (error) {

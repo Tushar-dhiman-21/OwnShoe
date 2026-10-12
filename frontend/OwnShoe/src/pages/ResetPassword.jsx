@@ -12,6 +12,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import axios from "axios";
+import { api } from "../api";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -56,9 +57,7 @@ const ResetPassword = () => {
     try {
       setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/auth/reset-password",
-        {
+      const response = await api.post("/api/auth/reset-password", {
           email,
           otp,
           newPassword,

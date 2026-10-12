@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../api";
 import {
   Users,
   Mail,
@@ -10,8 +11,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = "http://localhost:8000";
+const API_URL = API_BASE_URL;
 
 const AdminUsers = () => {
   const navigate = useNavigate();

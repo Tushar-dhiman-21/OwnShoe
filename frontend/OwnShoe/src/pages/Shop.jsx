@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import axios from "axios";
+import { api } from "../api";
 import {
   Search,
   X,
@@ -202,7 +203,7 @@ export default function Shop() {
         setLoading(true);
         setError("");
 
-        const response = await axios.get("http://localhost:8000/api/products");
+        const response = await api.get("/api/products");
 
         setProducts(response.data.products || []);
       } catch (error) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { api } from "../api";
 
 import ProductCard from "./ProductCard";
 
@@ -12,9 +13,7 @@ function NewArrivals() {
   useEffect(() => {
     const fetchNewArrivals = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8000/api/products"
-        );
+            const response = await api.get("/api/products");
 
         const allProducts = response.data.products || [];
 

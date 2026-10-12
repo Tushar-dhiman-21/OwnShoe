@@ -1,3 +1,4 @@
+
 const Product = require("../models/Product");
 
 const normalizeCategory = (value) => {
@@ -7,38 +8,37 @@ const normalizeCategory = (value) => {
 
   const categoryMap = {
     "running shoes": "running",
-    "running": "running",
-    "sneakers": "sneakers",
-    "sports": "sports",
+    running: "running",
+    sneakers: "sneakers",
+    sports: "sports",
     "casual shoes": "casual",
-    "casual": "casual",
+    casual: "casual",
     "formal shoes": "formal",
-    "formal": "formal",
-    "boots": "boots",
-    "loafers": "loafers",
-    "sandals": "sandals",
-    "slides": "slides",
+    formal: "formal",
+    boots: "boots",
+    loafers: "loafers",
+    sandals: "sandals",
+    slides: "slides",
     "high tops": "high-tops",
     "high-tops": "high-tops",
     "high tops shoes": "high-tops",
     "slip-ons": "slip-ons",
     "slip ons": "slip-ons",
     "slip-ons shoes": "slip-ons",
-    "trainers": "trainers",
-    "sale": "sale",
+    trainers: "trainers",
+    sale: "sale",
   };
 
-  return categoryMap[normalized] || normalized.replace(/\s+/g, "-");
-};
-
-const getPriceValue = (product) => {
-  const basePrice = Number(product?.discountPrice || product?.price || 0);
-  return Number.isFinite(basePrice) ? basePrice : 0;
+  return (
+    categoryMap[normalized] ||
+    normalized.replace(/\s+/g, "-")
+  );
 };
 
 // ==========================================
 // GET ALL PRODUCTS
 // GET /api/products
+// Returns all matching products by default
 // ==========================================
 
 const getAllProducts = async (req, res) => {
@@ -55,119 +55,189 @@ const getAllProducts = async (req, res) => {
       newOnly,
       bestSellerOnly,
       page = 1,
-      limit = 20,
+      limit,
     } = req.query;
 
     const query = {};
 
-    if (search) {
+    // SEARCH
+    if (search && String(search).trim()) {
       const searchText = String(search).trim();
 
-      if (searchText) {
-        query.$or = [
-          { name: { $regex: searchText, $options: "i" } },
-          { brand: { $regex: searchText, $options: "i" } },
-          { category: { $regex: searchText, $options: "i" } },
-        ];
-      }
+      query.$or = [
+        { name: { $regex: searchText, $options: "i" } },
+        { brand: { $regex: searchText, $options: "i" } },
+        { category: { $regex: searchText, $options: "i" } },
+      ];
     }
 
+    // CATEGORY
     const normalizedCategory = normalizeCategory(category);
+
     if (normalizedCategory && normalizedCategory !== "all") {
       query.category = normalizedCategory;
     }
 
-    if (brand) {
-      query.brand = { $regex: String(brand).trim(), $options: "i" };
+    // BRAND
+    if (brand && String(brand).trim()) {
+      query.brand = {
+        $regex: String(brand).trim(),
+        $options: "i",
+      };
     }
 
-    const parsedMinPrice = Number(minPrice);
-    const parsedMaxPrice = Number(maxPrice);
+    // PRICE FILTER
+    const parsedMinPrice =
+      minPrice !== undefined && minPrice !== ""
+        ? Number(minPrice)
+        : null;
 
-    if (Number.isFinite(parsedMinPrice) || Number.isFinite(parsedMaxPrice)) {
-      const min = Number.isFinite(parsedMinPrice) ? parsedMinPrice : 0;
-      const max = Number.isFinite(parsedMaxPrice) ? parsedMaxPrice : Number.MAX_SAFE_INTEGER;
+    const parsedMaxPrice =
+      maxPrice !== undefined && maxPrice !== ""
+        ? Number(maxPrice)
+        : null;
 
-      query.$and = [
-        {
-          $or: [
-            { discountPrice: { $exists: false } },
-            { discountPrice: null },
-            { discountPrice: { $gte: 0 } },
-          ],
-        },
-        {
-          $or: [
-            { price: { $gte: min, $lte: max } },
-            { discountPrice: { $gte: min, $lte: max } },
-          ],
-        },
+    const hasMinPrice =
+      parsedMinPrice !== null &&
+      Number.isFinite(parsedMinPrice);
+
+    const hasMaxPrice =
+      parsedMaxPrice !== null &&
+      Number.isFinite(parsedMaxPrice);
+
+    if (hasMinPrice || hasMaxPrice) {
+      const priceCondition = {};
+
+      if (hasMinPrice) {
+        priceCondition.$gte = parsedMinPrice;
+      }
+
+      if (hasMaxPrice) {
+        priceCondition.$lte = parsedMaxPrice;
+      }
+
+      query.$or = [
+        { price: priceCondition },
+        { discountPrice: priceCondition },
       ];
+
+      // Preserve search conditions when both are used.
+      if (search && String(search).trim()) {
+        const searchText = String(search).trim();
+
+        query.$and = [
+          {
+            $or: [
+              { name: { $regex: searchText, $options: "i" } },
+              { brand: { $regex: searchText, $options: "i" } },
+              { category: { $regex: searchText, $options: "i" } },
+            ],
+          },
+          {
+            $or: [
+              { price: priceCondition },
+              { discountPrice: priceCondition },
+            ],
+          },
+        ];
+
+        delete query.$or;
+      }
     }
 
-    if (size) {
+    // SIZE
+    if (size !== undefined && size !== "") {
       const sizeValue = Number(size);
+
       if (Number.isFinite(sizeValue)) {
         query.sizes = sizeValue;
       }
     }
 
-    if (color) {
-      const colorValue = String(color).trim();
-      if (colorValue) {
-        query.colors = { $regex: colorValue, $options: "i" };
-      }
+    // COLOR
+    if (color && String(color).trim()) {
+      query.colors = {
+        $regex: String(color).trim(),
+        $options: "i",
+      };
     }
 
+    // NEW ARRIVALS
     if (newOnly === "true") {
       query.isNew = true;
     }
 
+    // BEST SELLERS
     if (bestSellerOnly === "true") {
       query.isBestSeller = true;
     }
 
-    let productsQuery = Product.find(query);
+    // SORTING
+    let sortConfig = {};
 
-    const sortConfig = {};
     switch (String(sort || "featured").toLowerCase()) {
       case "price-asc":
-        sortConfig.price = 1;
+        sortConfig = { price: 1 };
         break;
+
       case "price-desc":
-        sortConfig.price = -1;
+        sortConfig = { price: -1 };
         break;
+
       case "rating":
-        sortConfig.rating = -1;
+        sortConfig = { rating: -1 };
         break;
+
       case "newest":
       case "new":
-        sortConfig.createdAt = -1;
+        sortConfig = { createdAt: -1 };
         break;
+
       default:
-        sortConfig.createdAt = -1;
+        sortConfig = { createdAt: -1 };
         break;
     }
 
-    productsQuery = productsQuery.sort(sortConfig);
-
+    // PAGINATION
+    // No limit provided = return all matching products.
+    // A positive limit provided = use pagination.
     const pageNumber = Math.max(1, Number(page) || 1);
-    const limitNumber = Math.max(1, Number(limit) || 20);
+
+    const requestedLimit = Number(limit);
+
+    const hasLimit =
+      limit !== undefined &&
+      limit !== "" &&
+      Number.isFinite(requestedLimit) &&
+      requestedLimit > 0;
 
     const total = await Product.countDocuments(query);
-    const skip = (pageNumber - 1) * limitNumber;
 
-    const products = await productsQuery.skip(skip).limit(limitNumber);
+    let productsQuery = Product.find(query).sort(sortConfig);
 
+    if (hasLimit) {
+      const limitNumber = Math.floor(requestedLimit);
+      const skip = (pageNumber - 1) * limitNumber;
+
+      productsQuery = productsQuery
+        .skip(skip)
+        .limit(limitNumber);
+    }
+
+    const products = await productsQuery;
+
+    // RESPONSE
     res.status(200).json({
       success: true,
       count: products.length,
       total,
       page: pageNumber,
-      limit: limitNumber,
+      limit: hasLimit ? Math.floor(requestedLimit) : null,
       products,
     });
   } catch (error) {
+    console.error("Get products error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch products",
@@ -176,7 +246,6 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-
 // ==========================================
 // GET SINGLE PRODUCT
 // GET /api/products/:id
@@ -184,7 +253,10 @@ const getAllProducts = async (req, res) => {
 
 const getSingleProduct = async (req, res) => {
   try {
-    if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+    if (
+      !req.params.id ||
+      !/^[0-9a-fA-F]{24}$/.test(req.params.id)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid product ID",
@@ -204,7 +276,6 @@ const getSingleProduct = async (req, res) => {
       success: true,
       product,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -213,7 +284,6 @@ const getSingleProduct = async (req, res) => {
     });
   }
 };
-
 
 // ==========================================
 // CREATE PRODUCT
@@ -229,7 +299,6 @@ const createProduct = async (req, res) => {
       message: "Product created successfully",
       product,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -238,7 +307,6 @@ const createProduct = async (req, res) => {
     });
   }
 };
-
 
 // ==========================================
 // UPDATE PRODUCT
@@ -268,7 +336,6 @@ const updateProduct = async (req, res) => {
       message: "Product updated successfully",
       product,
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -278,7 +345,6 @@ const updateProduct = async (req, res) => {
   }
 };
 
-
 // ==========================================
 // DELETE PRODUCT
 // DELETE /api/products/:id
@@ -286,7 +352,9 @@ const updateProduct = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findByIdAndDelete(
+      req.params.id
+    );
 
     if (!product) {
       return res.status(404).json({
@@ -299,7 +367,6 @@ const deleteProduct = async (req, res) => {
       success: true,
       message: "Product deleted successfully",
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -308,7 +375,6 @@ const deleteProduct = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getAllProducts,

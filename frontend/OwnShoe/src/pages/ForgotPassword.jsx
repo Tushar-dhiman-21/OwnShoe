@@ -11,6 +11,7 @@ import {
   KeyRound,
 } from "lucide-react";
 
+import { api } from "../api";
 
 function ForgotPassword() {
 
@@ -47,12 +48,9 @@ function ForgotPassword() {
       setLoading(true);
 
 
-      const response = await axios.post(
-        "http://localhost:8000/api/auth/forgot-password",
-        {
-          email: email.trim().toLowerCase(),
-        }
-      );
+      const response = await api.post("/api/auth/forgot-password", {
+        email: email.trim().toLowerCase(),
+      });
 
 
       if (response.data.success) {
