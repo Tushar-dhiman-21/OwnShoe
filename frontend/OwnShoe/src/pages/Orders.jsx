@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
 import {
   Package,
   MapPin,
@@ -13,18 +12,6 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api";
-const API_BASE_URL = (
-  import.meta.env.VITE_API_URL || "http ://localhost:8000"
-).replace(/\/$/, "");
-
-const getAuthToken = () =>
-  localStorage.getItem("ownshoe-token") || localStorage.getItem("token");
-
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
 
 function Orders() {
   const { user, loading: authLoading } = useAuth();
@@ -36,6 +23,7 @@ function Orders() {
 
   const userId = user?.id || user?._id || user?.userId;
 
+  // Fetch customer orders
   const fetchOrders = useCallback(async () => {
     if (!userId) {
       setOrders([]);
@@ -48,12 +36,7 @@ function Orders() {
       setLoading(true);
       setError("");
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/orders/user/${userId}`,
-        {
-          headers: getAuthHeaders(),
-        },
-      );
+      const response = await api.get(`/api/orders/user/${userId}`);
 
       if (response.data.success) {
         setOrders(
@@ -81,6 +64,7 @@ function Orders() {
     fetchOrders();
   }, [authLoading, fetchOrders]);
 
+  // Cancel order
   const handleCancelOrder = async (orderId) => {
     const confirmCancel = window.confirm(
       "Are you sure you want to cancel this order?",
@@ -91,19 +75,16 @@ function Orders() {
     try {
       setCancellingId(orderId);
 
-      const response = await axios.put(
-        `${API_BASE_URL}/api/orders/${orderId}/cancel`,
-        {},
-        {
-          headers: getAuthHeaders(),
-        },
-      );
+      const response = await api.put(`/api/orders/${orderId}/cancel`);
 
       if (response.data.success) {
         setOrders((previousOrders) =>
           previousOrders.map((order) =>
             order._id === orderId
-              ? { ...order, orderStatus: "cancelled" }
+              ? {
+                  ...order,
+                  orderStatus: "cancelled",
+                }
               : order,
           ),
         );
@@ -122,12 +103,15 @@ function Orders() {
     }
   };
 
+  // Format order date
   const formatDate = (date) => {
     if (!date) return "N/A";
 
     const parsedDate = new Date(date);
 
-    if (Number.isNaN(parsedDate.getTime())) return "N/A";
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "N/A";
+    }
 
     return parsedDate.toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -136,6 +120,7 @@ function Orders() {
     });
   };
 
+  // Order status styling
   const getStatusStyle = (status) => {
     switch (status) {
       case "placed":
@@ -155,6 +140,7 @@ function Orders() {
     }
   };
 
+  // Payment status styling
   const getPaymentStatusStyle = (status) => {
     switch (status) {
       case "paid":
@@ -166,6 +152,7 @@ function Orders() {
     }
   };
 
+  // Loading state
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -177,6 +164,7 @@ function Orders() {
     );
   }
 
+  // Login required
   if (!userId) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-4">
@@ -202,6 +190,7 @@ function Orders() {
     );
   }
 
+  // Error state
   if (error && orders.length === 0) {
     return (
       <div className="min-h-screen bg-white">
@@ -416,7 +405,9 @@ function Orders() {
                         <p className="font-semibold text-black">
                           {order.customer?.name || "N/A"}
                         </p>
+
                         <p>{order.shippingAddress?.address || "N/A"}</p>
+
                         <p>
                           {order.shippingAddress?.city || ""}
                           {order.shippingAddress?.state
@@ -426,6 +417,7 @@ function Orders() {
                             ? ` - ${order.shippingAddress.pincode}`
                             : ""}
                         </p>
+
                         <p>Phone: {order.customer?.phone || "N/A"}</p>
                       </div>
                     </div>
@@ -468,7 +460,9 @@ function Orders() {
                           <span className="font-semibold text-black">
                             {Number(order.shippingCharge || 0) === 0
                               ? "FREE"
-                              : `₹${Number(order.shippingCharge).toLocaleString("en-IN")}`}
+                              : `₹${Number(order.shippingCharge).toLocaleString(
+                                  "en-IN",
+                                )}`}
                           </span>
                         </div>
 

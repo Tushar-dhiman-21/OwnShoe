@@ -1,7 +1,7 @@
+
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import { api } from "../api";
 
 import ProductCard from "./ProductCard";
@@ -13,7 +13,7 @@ function NewArrivals() {
   useEffect(() => {
     const fetchNewArrivals = async () => {
       try {
-            const response = await api.get("/api/products");
+        const response = await api.get("/api/products");
 
         const allProducts = response.data.products || [];
 
@@ -35,27 +35,23 @@ function NewArrivals() {
   return (
     <section className="section new-arrivals bg-[#f7f7f5]">
       <div className="container">
-
         {/* ================= HEADING ================= */}
         <div className="section-heading">
-
           <div>
             <span className="section-label">
               JUST DROPPED
             </span>
 
-            <h2>
-              New Arrivals
-            </h2>
+            <h2>New Arrivals</h2>
           </div>
 
           <Link
             to="/shop?filter=new"
-className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-5 py-2.5 text-sm font-bold !text-black shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-black hover:!text-white hover:-translate-y-0.5 hover:shadow-lg"          >
+            className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-5 py-2.5 text-sm font-bold !text-black shadow-sm backdrop-blur-xl transition-all duration-300 hover:bg-black hover:!text-white hover:-translate-y-0.5 hover:shadow-lg"
+          >
             Shop all
             <ArrowRight size={16} />
           </Link>
-
         </div>
 
         {/* ================= PRODUCTS ================= */}
@@ -81,7 +77,6 @@ className="inline-flex items-center gap-2 rounded-full border border-black/10 bg
             ))}
           </div>
         )}
-
       </div>
     </section>
   );

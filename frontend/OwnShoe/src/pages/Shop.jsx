@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import {
   Search,
@@ -10,8 +10,8 @@ import {
   Rows3,
   Flame,
   Check,
+  ShoppingCart,
 } from "lucide-react";
-
 import ProductCard from "../components/ProductCard";
 import BackToHome from "../components/BackToHome";
 import Footer from "../components/Footer";
@@ -79,6 +79,8 @@ const PRICE_RANGES = [
 ];
 
 export default function Shop() {
+  const navigate = useNavigate();
+
   // =====================================================
   // PRODUCTS
   // =====================================================
@@ -90,9 +92,7 @@ export default function Shop() {
   // =====================================================
 
   const [search, setSearch] = useState("");
-
   const [activeCategory, setActiveCategory] = useState("all");
-
   const [sortBy, setSortBy] = useState("featured");
 
   // =====================================================
@@ -106,7 +106,6 @@ export default function Shop() {
   // =====================================================
 
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
 
   // =====================================================
@@ -114,13 +113,9 @@ export default function Shop() {
   // =====================================================
 
   const [filterOpen, setFilterOpen] = useState(false);
-
   const [priceRange, setPriceRange] = useState("all");
-
   const [minRating, setMinRating] = useState(0);
-
   const [newOnly, setNewOnly] = useState(false);
-
   const [bestSellerOnly, setBestSellerOnly] = useState(false);
 
   // =====================================================
@@ -131,39 +126,27 @@ export default function Shop() {
     const params = new URLSearchParams(window.location.search);
 
     const searchParam = params.get("search") || "";
-
     const categoryParam = params.get("category") || "all";
-
     const filterParam = params.get("filter") || "";
 
-    // SEARCH
     setSearch(searchParam);
 
-    // CATEGORY
     const validCategory = CATEGORIES.some(
       (category) => category.id === categoryParam,
     );
 
-    if (validCategory) {
-      setActiveCategory(categoryParam);
-    } else {
-      setActiveCategory("all");
-    }
+    setActiveCategory(validCategory ? categoryParam : "all");
 
-    // HEADER FILTER
     if (filterParam === "new") {
       setSortBy("new");
-
       setNewOnly(true);
       setBestSellerOnly(false);
     } else if (filterParam === "best") {
       setSortBy("best");
-
       setBestSellerOnly(true);
       setNewOnly(false);
     } else {
       setSortBy("featured");
-
       setNewOnly(false);
       setBestSellerOnly(false);
     }
@@ -208,7 +191,6 @@ export default function Shop() {
         setProducts(response.data.products || []);
       } catch (error) {
         console.error("Failed to fetch products:", error);
-
         setError("Failed to load products. Please try again.");
       } finally {
         setLoading(false);
@@ -229,30 +211,25 @@ export default function Shop() {
   }) => {
     const params = new URLSearchParams();
 
-    // SEARCH
     if (searchValue.trim()) {
       params.set("search", searchValue.trim());
     }
 
-    // CATEGORY
     if (categoryValue && categoryValue !== "all") {
       params.set("category", categoryValue);
     }
 
-    // HEADER FILTER
     if (filterValue === "new" || filterValue === "best") {
       params.set("filter", filterValue);
     }
 
     const queryString = params.toString();
-
     const newURL = queryString ? `/shop?${queryString}` : "/shop";
 
     const currentURL = window.location.pathname + window.location.search;
 
     if (currentURL !== newURL) {
       window.history.pushState({}, "", newURL);
-
       window.dispatchEvent(new PopStateEvent("popstate"));
     }
   };
@@ -291,7 +268,6 @@ export default function Shop() {
 
   const handleSort = (value) => {
     setSortBy(value);
-
     setNewOnly(false);
     setBestSellerOnly(false);
 
@@ -318,13 +294,9 @@ export default function Shop() {
 
   const clearFilters = () => {
     setPriceRange("all");
-
     setMinRating(0);
-
     setNewOnly(false);
-
     setBestSellerOnly(false);
-
     setSortBy("featured");
 
     updateURL({
@@ -341,10 +313,7 @@ export default function Shop() {
   const filteredProducts = useMemo(() => {
     let list = [...products];
 
-    // ===================================================
     // SEARCH
-    // ===================================================
-
     if (search.trim()) {
       const q = search.toLowerCase().trim();
 
@@ -357,22 +326,16 @@ export default function Shop() {
       });
     }
 
-    // ===================================================
     // CATEGORY
-    // ===================================================
-
     if (activeCategory !== "all") {
-      // ON SALE
       if (activeCategory === "sale") {
         list = list.filter((product) => {
           const price = Number(product.price || 0);
-
           const discountPrice = Number(product.discountPrice || 0);
 
           return discountPrice > 0 && discountPrice < price;
         });
       } else {
-        // NORMAL CATEGORY
         list = list.filter(
           (product) =>
             product.category?.toLowerCase().trim() ===
@@ -381,26 +344,17 @@ export default function Shop() {
       }
     }
 
-    // ===================================================
     // NEW ARRIVALS
-    // ===================================================
-
     if (sortBy === "new" || newOnly) {
       list = list.filter((product) => product.isNew === true);
     }
 
-    // ===================================================
     // BEST SELLERS
-    // =====================================================
-
     if (sortBy === "best" || bestSellerOnly) {
       list = list.filter((product) => product.isBestSeller === true);
     }
 
-    // ===================================================
     // PRICE FILTER
-    // ===================================================
-
     if (priceRange !== "all") {
       const selectedRange = PRICE_RANGES.find(
         (range) => range.id === priceRange,
@@ -415,18 +369,12 @@ export default function Shop() {
       }
     }
 
-    // ===================================================
     // RATING FILTER
-    // ===================================================
-
     if (minRating > 0) {
       list = list.filter((product) => Number(product.rating || 0) >= minRating);
     }
 
-    // ===================================================
     // PRICE LOW TO HIGH
-    // ===================================================
-
     if (sortBy === "price-asc") {
       list.sort(
         (a, b) =>
@@ -435,10 +383,7 @@ export default function Shop() {
       );
     }
 
-    // ===================================================
     // PRICE HIGH TO LOW
-    // ===================================================
-
     if (sortBy === "price-desc") {
       list.sort(
         (a, b) =>
@@ -447,30 +392,21 @@ export default function Shop() {
       );
     }
 
-    // ===================================================
     // TOP RATED
-    // ===================================================
-
     if (sortBy === "rating") {
       list.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
     }
 
-    // ===================================================
     // BEST SELLERS
-    // ===================================================
-
     if (sortBy === "best") {
       list.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
     }
 
-    // ===================================================
     // NEW ARRIVALS
-    // ===================================================
-
     if (sortBy === "new") {
-      list.sort((a, b) => {
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-      });
+      list.sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      );
     }
 
     return list;
@@ -507,24 +443,37 @@ export default function Shop() {
     return "Shop all shoes";
   };
 
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
     <div className="w-full min-h-screen bg-[#f7f7f5]">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-5 lg:pt-8 pb-16">
-        {/* ================================================= */}
         {/* TOP NAV */}
-        {/* ================================================= */}
 
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between gap-3">
           <BackToHome />
 
-          <span className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
-            OwnShoe / Shop
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
+              OwnShoe / Shop
+            </span>
+
+            {/* CART BUTTON */}
+
+            <button
+              type="button"
+              onClick={() => navigate("/cart")}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-black/10 bg-white/70 px-4 text-sm font-semibold text-gray-900 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:bg-black hover:text-white"
+            >
+              <ShoppingCart size={17} />
+              <span>Cart</span>
+            </button>
+          </div>
         </div>
 
-        {/* ================================================= */}
         {/* HEADING */}
-        {/* ================================================= */}
 
         <div className="flex flex-col gap-1 mb-6">
           <div className="flex items-center gap-1.5">
@@ -544,9 +493,7 @@ export default function Shop() {
           </p>
         </div>
 
-        {/* ================================================= */}
         {/* SEARCH */}
-        {/* ================================================= */}
 
         <div className="relative mb-4 max-w-2xl">
           <Search
@@ -558,62 +505,25 @@ export default function Shop() {
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search silhouette, brand, or style..."
-            className="
-              w-full
-              h-12
-              pl-11
-              pr-10
-              rounded-full
-              border border-black/10
-              bg-white/70
-              backdrop-blur-xl
-              text-sm
-              text-gray-900
-              outline-none
-              shadow-sm
-              transition-all
-              focus:border-black/20
-              focus:ring-2
-              focus:ring-black/10
-              placeholder:text-gray-400
-            "
+            className="w-full h-12 pl-11 pr-10 rounded-full border border-black/10 bg-white/70 backdrop-blur-xl text-sm text-gray-900 outline-none shadow-sm transition-all focus:border-black/20 focus:ring-2 focus:ring-black/10 placeholder:text-gray-400"
           />
 
           {search && (
             <button
               type="button"
               onClick={() => handleSearch("")}
-              className="
-                absolute
-                right-3.5
-                top-1/2
-                -translate-y-1/2
-                w-6
-                h-6
-                rounded-full
-                bg-gray-100
-                flex
-                items-center
-                justify-center
-                text-gray-500
-                hover:bg-black
-                hover:text-white
-                transition-colors
-              "
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-colors"
             >
               <X size={14} />
             </button>
           )}
         </div>
 
-        {/* ================================================= */}
         {/* CATEGORIES */}
-        {/* ================================================= */}
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-4">
           {CATEGORIES.map((cat) => {
             const Icon = cat.icon;
-
             const active = activeCategory === cat.id;
 
             return (
@@ -621,79 +531,31 @@ export default function Shop() {
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategory(cat.id)}
-                className={`
-                  shrink-0
-                  px-4
-                  py-2.5
-                  rounded-full
-                  text-sm
-                  font-semibold
-                  flex
-                  items-center
-                  gap-1.5
-                  transition-all
-                  duration-300
-                  ${
-                    active
-                      ? "bg-black !text-white shadow-md"
-                      : "bg-white/70 border border-black/10 text-gray-700 backdrop-blur-xl hover:bg-black hover:!text-white"
-                  }
-                `}
+                className={`shrink-0 px-4 py-2.5 rounded-full text-sm font-semibold flex items-center gap-1.5 transition-all duration-300 ${
+                  active
+                    ? "bg-black !text-white shadow-md"
+                    : "bg-white/70 border border-black/10 text-gray-700 backdrop-blur-xl hover:bg-black hover:!text-white"
+                }`}
               >
                 {Icon && <Icon size={15} />}
-
                 {cat.label}
               </button>
             );
           })}
         </div>
 
-        {/* ================================================= */}
         {/* FILTER + SORT + VIEW */}
-        {/* ================================================= */}
 
         <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
-          {/* FILTER */}
-
           <button
             type="button"
             onClick={() => setFilterOpen(!filterOpen)}
-            className="
-              h-10
-              px-4
-              rounded-full
-              bg-white/70
-              border border-black/10
-              backdrop-blur-xl
-              hover:bg-black
-              hover:!text-white
-              flex
-              items-center
-              gap-2
-              text-sm
-              font-semibold
-              text-gray-900
-              transition-all
-              duration-300
-            "
+            className="h-10 px-4 rounded-full bg-white/70 border border-black/10 backdrop-blur-xl hover:bg-black hover:!text-white flex items-center gap-2 text-sm font-semibold text-gray-900 transition-all duration-300"
           >
             <SlidersHorizontal size={16} />
             Filter
             {activeFilterCount > 0 && (
-              <span
-                className="
-                  w-5
-                  h-5
-                  rounded-full
-                  bg-red-600
-                  !text-white
-                  text-[10px]
-                  flex
-                  items-center
-                  justify-center
-                  font-bold
-                "
-              >
+              <span className="w-5 h-5 rounded-full bg-red-600 !text-white text-[10px] flex items-center justify-center font-bold">
                 {activeFilterCount}
               </span>
             )}
@@ -708,42 +570,17 @@ export default function Shop() {
                   sortBy === "new" || sortBy === "best" ? "featured" : sortBy
                 }
                 onChange={(e) => handleSort(e.target.value)}
-                className="
-                  h-10
-                  pl-4
-                  pr-9
-                  rounded-full
-                  bg-white/70
-                  border border-black/10
-                  backdrop-blur-xl
-                  hover:bg-white
-                  text-sm
-                  text-gray-900
-                  appearance-none
-                  outline-none
-                  cursor-pointer
-                  shadow-sm
-                "
+                className="h-10 pl-4 pr-9 rounded-full bg-white/70 border border-black/10 backdrop-blur-xl hover:bg-white text-sm text-gray-900 appearance-none outline-none cursor-pointer shadow-sm"
               >
                 <option value="featured">Sort: Featured</option>
-
                 <option value="price-asc">Price: Low to high</option>
-
                 <option value="price-desc">Price: High to low</option>
-
                 <option value="rating">Top rated</option>
               </select>
 
               <ChevronDown
                 size={15}
-                className="
-                  pointer-events-none
-                  absolute
-                  right-3.5
-                  top-1/2
-                  -translate-y-1/2
-                  text-gray-400
-                "
+                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400"
               />
             </div>
 
@@ -753,20 +590,11 @@ export default function Shop() {
               <button
                 type="button"
                 onClick={() => setGridView(true)}
-                className={`
-                  w-8
-                  h-8
-                  rounded-full
-                  flex
-                  items-center
-                  justify-center
-                  transition-all
-                  ${
-                    gridView
-                      ? "bg-black !text-white shadow-sm"
-                      : "text-gray-400 hover:text-black"
-                  }
-                `}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  gridView
+                    ? "bg-black !text-white shadow-sm"
+                    : "text-gray-400 hover:text-black"
+                }`}
               >
                 <Grid2x2 size={16} />
               </button>
@@ -774,20 +602,11 @@ export default function Shop() {
               <button
                 type="button"
                 onClick={() => setGridView(false)}
-                className={`
-                  w-8
-                  h-8
-                  rounded-full
-                  flex
-                  items-center
-                  justify-center
-                  transition-all
-                  ${
-                    !gridView
-                      ? "bg-black !text-white shadow-sm"
-                      : "text-gray-400 hover:text-black"
-                  }
-                `}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  !gridView
+                    ? "bg-black !text-white shadow-sm"
+                    : "text-gray-400 hover:text-black"
+                }`}
               >
                 <Rows3 size={16} />
               </button>
@@ -795,26 +614,13 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* ================================================= */}
         {/* FILTER PANEL */}
-        {/* ================================================= */}
 
         {filterOpen && (
-          <div
-            className="
-              mb-6
-              bg-white
-              border
-              border-black/10
-              rounded-2xl
-              shadow-lg
-              p-5
-            "
-          >
+          <div className="mb-6 bg-white border border-black/10 rounded-2xl shadow-lg p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h3 className="font-bold text-gray-900">Filter shoes</h3>
-
                 <p className="text-xs text-gray-500 mt-1">
                   Refine your collection
                 </p>
@@ -823,13 +629,7 @@ export default function Shop() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="
-                  text-xs
-                  font-semibold
-                  text-red-600
-                  hover:text-black
-                  transition
-                "
+                className="text-xs font-semibold text-red-600 hover:text-black transition"
               >
                 Clear all
               </button>
@@ -847,25 +647,13 @@ export default function Shop() {
                       key={range.id}
                       type="button"
                       onClick={() => setPriceRange(range.id)}
-                      className={`
-                          w-full
-                          flex
-                          items-center
-                          justify-between
-                          px-3
-                          py-2.5
-                          rounded-xl
-                          text-sm
-                          transition
-                          ${
-                            priceRange === range.id
-                              ? "bg-black text-white"
-                              : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                          }
-                        `}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition ${
+                        priceRange === range.id
+                          ? "bg-black text-white"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      }`}
                     >
                       <span>{range.label}</span>
-
                       {priceRange === range.id && <Check size={15} />}
                     </button>
                   ))}
@@ -885,22 +673,11 @@ export default function Shop() {
                       key={rating}
                       type="button"
                       onClick={() => setMinRating(rating)}
-                      className={`
-                          w-full
-                          flex
-                          items-center
-                          justify-between
-                          px-3
-                          py-2.5
-                          rounded-xl
-                          text-sm
-                          transition
-                          ${
-                            minRating === rating
-                              ? "bg-black text-white"
-                              : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                          }
-                        `}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition ${
+                        minRating === rating
+                          ? "bg-black text-white"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                      }`}
                     >
                       <span>
                         {rating === 0 ? "All ratings" : `${rating}★ & above`}
@@ -923,50 +700,26 @@ export default function Shop() {
                   <button
                     type="button"
                     onClick={() => setNewOnly(!newOnly)}
-                    className={`
-                      w-full
-                      flex
-                      items-center
-                      justify-between
-                      px-3
-                      py-2.5
-                      rounded-xl
-                      text-sm
-                      transition
-                      ${
-                        newOnly
-                          ? "bg-black text-white"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                      }
-                    `}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition ${
+                      newOnly
+                        ? "bg-black text-white"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
                     <span>New arrivals</span>
-
                     {newOnly && <Check size={15} />}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setBestSellerOnly(!bestSellerOnly)}
-                    className={`
-                      w-full
-                      flex
-                      items-center
-                      justify-between
-                      px-3
-                      py-2.5
-                      rounded-xl
-                      text-sm
-                      transition
-                      ${
-                        bestSellerOnly
-                          ? "bg-black text-white"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                      }
-                    `}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition ${
+                      bestSellerOnly
+                        ? "bg-black text-white"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
                     <span>Best sellers</span>
-
                     {bestSellerOnly && <Check size={15} />}
                   </button>
                 </div>
@@ -979,17 +732,7 @@ export default function Shop() {
               <button
                 type="button"
                 onClick={() => setFilterOpen(false)}
-                className="
-                  px-6
-                  py-2.5
-                  rounded-full
-                  bg-black
-                  text-white
-                  text-sm
-                  font-semibold
-                  hover:bg-red-600
-                  transition
-                "
+                className="px-6 py-2.5 rounded-full bg-black text-white text-sm font-semibold hover:bg-red-600 transition"
               >
                 Apply filters
               </button>
@@ -997,9 +740,7 @@ export default function Shop() {
           </div>
         )}
 
-        {/* ================================================= */}
         {/* LOADING */}
-        {/* ================================================= */}
 
         {loading && (
           <div className="glass rounded-2xl flex justify-center items-center py-20">
@@ -1007,9 +748,7 @@ export default function Shop() {
           </div>
         )}
 
-        {/* ================================================= */}
         {/* ERROR */}
-        {/* ================================================= */}
 
         {!loading && error && (
           <div className="glass rounded-2xl flex justify-center items-center py-20">
@@ -1017,9 +756,7 @@ export default function Shop() {
           </div>
         )}
 
-        {/* ================================================= */}
         {/* PRODUCTS */}
-        {/* ================================================= */}
 
         {!loading && !error && (
           <>
@@ -1035,9 +772,7 @@ export default function Shop() {
               ))}
             </div>
 
-            {/* ================================================= */}
             {/* NO PRODUCTS */}
-            {/* ================================================= */}
 
             {filteredProducts.length === 0 && (
               <div className="glass rounded-2xl text-center py-16 mt-4">
@@ -1052,9 +787,7 @@ export default function Shop() {
                     type="button"
                     onClick={() => {
                       clearFilters();
-
                       setSearch("");
-
                       setActiveCategory("all");
 
                       updateURL({
@@ -1063,13 +796,7 @@ export default function Shop() {
                         filterValue: "",
                       });
                     }}
-                    className="
-                      mt-2
-                      text-sm
-                      font-semibold
-                      text-red-600
-                      hover:text-black
-                    "
+                    className="mt-2 text-sm font-semibold text-red-600 hover:text-black"
                   >
                     Clear filters
                   </button>
@@ -1079,8 +806,8 @@ export default function Shop() {
           </>
         )}
       </div>
-    <div><Footer></Footer></div>
 
+      <Footer />
     </div>
   );
 }

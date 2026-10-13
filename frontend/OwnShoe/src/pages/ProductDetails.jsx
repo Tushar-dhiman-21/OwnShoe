@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-
 import { useParams, Link, useNavigate } from "react-router-dom";
-
-import axios from "axios";
 import { api } from "../api";
 import {
   Heart,
@@ -145,27 +142,30 @@ const response = await api.get(`/api/products/${id}`);
 
   // Get reviews
 
-  const fetchReviews = async () => {
-    try {
-      setReviewsLoading(true);
+  // Get reviews
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/reviews?product=${id}`,
-      );
+const fetchReviews = async () => {
+  try {
+    setReviewsLoading(true);
 
-      setReviews(response.data.reviews || []);
-    } catch (error) {
-      console.error("Failed to fetch reviews:", error);
+    const response = await api.get(`/api/reviews?product=${id}`);
 
-      setReviews([]);
-    } finally {
-      setReviewsLoading(false);
-    }
-  };
+    setReviews(response.data.reviews || []);
+  } catch (error) {
+    console.error(
+      "Failed to fetch reviews:",
+      error.response?.data || error.message
+    );
 
-  useEffect(() => {
-    fetchReviews();
-  }, [id]);
+    setReviews([]);
+  } finally {
+    setReviewsLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchReviews();
+}, [id]);
 
   // Check wishlist
 

@@ -1,10 +1,12 @@
 ﻿
 import axios from "axios";
 
-export const API_BASE_URL = (
+const LOCAL_API = "http://localhost:8000";
+const DEPLOYED_API = "https://ownshoe-backend.vercel.app";
+
+export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "https://ownshoe-backend.vercel.app"
-).replace(/\/+$/, "");
+  (import.meta.env.DEV ? LOCAL_API : DEPLOYED_API);
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

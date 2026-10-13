@@ -595,8 +595,8 @@ function Checkout() {
           </p>
 <Link
   to="/shop"
-  className="inline-flex mt-6 px-7 h-12 items-center justify-center rounded-xl bg-white text-white font-semibold hover:bg-red-600 hover:text-white transition-all duration-300"
->
+ className="
+                mt-7 inline-flex items-center gap-2 px-6 h-11 rounded-full bg-black  !text-white  text-sm  font-semibold hover:bg-red-600 hover:!text-white transition-colors ">
   Shop Now
 </Link>
 
@@ -879,9 +879,9 @@ function Checkout() {
                         UPI, cards and other available payment options.
                       </p>
 
-                      <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 px-2 py-1 rounded">
+                      {/* <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 px-2 py-1 rounded">
                         Razorpay Test Mode
-                      </span>
+                      </span> */}
                     </div>
                   </label>
                 </div>
@@ -896,8 +896,9 @@ function Checkout() {
 
                       <p className="text-sm text-gray-600">
                         Your payment will be processed through Razorpay's secure
-                        checkout. Test Mode is intended for testing and does not
-                        represent a real successful purchase.
+                        checkout. 
+                        {/* Test Mode is intended for testing and does not
+                        represent a real successful purchase. */}
                       </p>
                     </div>
                   </div>
