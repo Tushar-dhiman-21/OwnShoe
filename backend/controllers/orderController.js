@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 const crypto = require("crypto");
 const Razorpay = require("razorpay");
@@ -5,33 +6,42 @@ const Razorpay = require("razorpay");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 
-// Razorpay configuration
+// =====================================================
+// RAZORPAY CONFIGURATION
+// =====================================================
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// Calculate the actual product price from the database
+// =====================================================
+// PRODUCT PRICE
+// =====================================================
+
 const getProductPrice = (product) => {
   const originalPrice = Number(product.price || 0);
   const discountPrice = Number(product.discountPrice || 0);
 
-  if (
-    discountPrice > 0 &&
-    discountPrice < originalPrice
-  ) {
+  if (discountPrice > 0 && discountPrice < originalPrice) {
     return discountPrice;
   }
 
   return originalPrice;
 };
 
-// Calculate shipping charges
+// =====================================================
+// SHIPPING CHARGE
+// =====================================================
+
 const getShippingCharge = (subtotal) => {
   return subtotal >= 2000 ? 0 : 99;
 };
 
-// Validate and prepare order items
+// =====================================================
+// PREPARE ORDER ITEMS
+// =====================================================
+
 const prepareOrderItems = async (items) => {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("Your cart is empty.");
@@ -90,29 +100,30 @@ const prepareOrderItems = async (items) => {
     });
   }
 
+  const shippingCharge = getShippingCharge(subtotal);
+
   return {
     orderItems,
     subtotal,
-    shippingCharge: getShippingCharge(subtotal),
-    totalAmount: subtotal + getShippingCharge(subtotal),
+    shippingCharge,
+    totalAmount: subtotal + shippingCharge,
   };
 };
 
-// Validate customer and shipping details
-const validateOrderDetails = (customer, shippingAddress) => {
-  if (
-    !customer?.name ||
-    !customer?.email ||
-    !customer?.phone ||
-    !shippingAddress?.address ||
-    !shippingAddress?.city ||
-    !shippingAddress?.state ||
-    !shippingAddress?.pincode
-  ) {
-    return false;
-  }
+// =====================================================
+// VALIDATE CUSTOMER AND ADDRESS
+// =====================================================
 
-  return true;
+const validateOrderDetails = (customer, shippingAddress) => {
+  return Boolean(
+    customer?.name?.trim() &&
+    customer?.email?.trim() &&
+    customer?.phone?.trim() &&
+    shippingAddress?.address?.trim() &&
+    shippingAddress?.city?.trim() &&
+    shippingAddress?.state?.trim() &&
+    shippingAddress?.pincode?.trim()
+  );
 };
 
 // =====================================================
@@ -132,7 +143,6 @@ const createOrder = async (req, res) => {
       paymentMethod,
     } = req.body;
 
-    // This endpoint is only for Cash on Delivery
     if (paymentMethod && paymentMethod !== "cod") {
       return res.status(400).json({
         success: false,
@@ -156,7 +166,6 @@ const createOrder = async (req, res) => {
       totalAmount,
     } = await prepareOrderItems(items);
 
-    // Create the order as COD
     order = await Order.create({
       user: req.user.userId,
       items: orderItems,
@@ -170,7 +179,7 @@ const createOrder = async (req, res) => {
       orderStatus: "placed",
     });
 
-    // Deduct stock using an atomic stock check
+    // Deduct stock atomically
     for (const item of orderItems) {
       const product = await Product.findOneAndUpdate(
         {
@@ -195,11 +204,8 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Record that stock was deducted, if the schema supports it
-    if (Object.hasOwn(order.toObject(), "stockDeducted")) {
-      order.stockDeducted = true;
-      await order.save();
-    }
+    order.stockDeducted = true;
+    await order.save();
 
     return res.status(201).json({
       success: true,
@@ -207,7 +213,6 @@ const createOrder = async (req, res) => {
       order,
     });
   } catch (error) {
-    // Restore stock if order creation fails midway
     for (const item of deductedProducts) {
       try {
         await Product.findByIdAndUpdate(item.productId, {
@@ -228,15 +233,12 @@ const createOrder = async (req, res) => {
 
     console.error("Create COD order error:", error);
 
-    const clientError =
-      error.message ===
+    const stockConflict = error.message ===
       "Stock changed while placing your order. Please try again.";
 
-    return res.status(clientError ? 409 : 400).json({
+    return res.status(stockConflict ? 409 : 400).json({
       success: false,
-      message: clientError
-        ? error.message
-        : error.message || "Failed to place order.",
+      message: error.message || "Failed to place order.",
     });
   }
 };
@@ -277,7 +279,6 @@ const getUserOrders = async (req, res) => {
     const requestedUserId = req.params.userId;
     const loggedInUserId = req.user.userId.toString();
 
-    // Customers can only view their own orders
     if (
       req.user.role !== "admin" &&
       requestedUserId !== loggedInUserId
@@ -348,17 +349,13 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    if (
-      ["delivered", "cancelled"].includes(order.orderStatus)
-    ) {
+    if (["delivered", "cancelled"].includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
         message: "This order can no longer be updated.",
       });
     }
 
-    // Do not cancel a paid online order through this basic
-    // status endpoint. A proper refund flow is required.
     if (
       orderStatus === "cancelled" &&
       order.paymentMethod === "online" &&
@@ -385,7 +382,6 @@ const updateOrderStatus = async (req, res) => {
     }
 
     order.orderStatus = orderStatus;
-
     await order.save();
 
     return res.status(200).json({
@@ -489,9 +485,7 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    if (
-      ["shipped", "delivered"].includes(order.orderStatus)
-    ) {
+    if (["shipped", "delivered"].includes(order.orderStatus)) {
       return res.status(400).json({
         success: false,
         message: "This order can no longer be cancelled.",
@@ -516,7 +510,6 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Restore stock only if it was previously deducted
     if (order.stockDeducted === true) {
       for (const item of order.items) {
         await Product.findByIdAndUpdate(item.product, {
@@ -528,7 +521,6 @@ const cancelOrder = async (req, res) => {
     }
 
     order.orderStatus = "cancelled";
-
     await order.save();
 
     return res.status(200).json({
@@ -570,7 +562,6 @@ const createRazorpayOrder = async (req, res) => {
       totalAmount,
     } = await prepareOrderItems(items);
 
-    // Create an order on Razorpay
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(totalAmount * 100),
       currency: "INR",
@@ -580,7 +571,6 @@ const createRazorpayOrder = async (req, res) => {
       },
     });
 
-    // Save the pending order in MongoDB
     const order = await Order.create({
       user: req.user.userId,
       items: orderItems,
@@ -639,7 +629,6 @@ const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // Find the pending order belonging to this user
     const order = await Order.findOne({
       razorpayOrderId: razorpay_order_id,
       user: req.user.userId,
@@ -670,12 +659,10 @@ const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // Verify Razorpay's signature
+    // Verify Razorpay signature
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(
-        `${razorpay_order_id}|${razorpay_payment_id}`
-      )
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
     const expectedBuffer = Buffer.from(expectedSignature);
@@ -708,13 +695,17 @@ const verifyRazorpayPayment = async (req, res) => {
       });
     }
 
-    // Atomically claim this order for verification.
-    // Only one request can move it from pending to processing.
+    // FIX: Match both missing and null razorpayPaymentId.
+    // Atomically claim the order so concurrent requests
+    // cannot deduct stock more than once.
     const claimedOrder = await Order.findOneAndUpdate(
       {
         _id: order._id,
         paymentStatus: "pending",
-        razorpayPaymentId: { $exists: false },
+        $or: [
+          { razorpayPaymentId: { $exists: false } },
+          { razorpayPaymentId: null },
+        ],
       },
       {
         $set: {
@@ -771,7 +762,10 @@ const verifyRazorpayPayment = async (req, res) => {
         });
       }
 
+      // Payment is verified and stock has been deducted.
+      // Keep the order status as "placed".
       claimedOrder.paymentStatus = "paid";
+      claimedOrder.orderStatus = "placed";
       claimedOrder.stockDeducted = true;
 
       await claimedOrder.save();
@@ -782,17 +776,21 @@ const verifyRazorpayPayment = async (req, res) => {
         order: claimedOrder,
       });
     } catch (error) {
-      // Restore any stock already deducted in this attempt
+      // Restore stock if this attempt deducted any products
       for (const item of deductedProducts) {
-        await Product.findByIdAndUpdate(item.productId, {
-          $inc: { stock: item.quantity },
-        });
+        try {
+          await Product.findByIdAndUpdate(item.productId, {
+            $inc: { stock: item.quantity },
+          });
+        } catch (rollbackError) {
+          console.error("Stock rollback error:", rollbackError);
+        }
       }
 
-      // Do not mark the payment as paid when stock processing fails.
-      // The payment itself may already have been captured.
+      // The payment may already be captured.
+      // Keep it recoverable and do not claim success.
       claimedOrder.paymentStatus = "pending";
-      claimedOrder.razorpayPaymentId = undefined;
+      claimedOrder.razorpayPaymentId = null;
 
       await claimedOrder.save();
 
@@ -814,6 +812,10 @@ const verifyRazorpayPayment = async (req, res) => {
     });
   }
 };
+
+// =====================================================
+// EXPORT CONTROLLERS
+// =====================================================
 
 module.exports = {
   createOrder,
