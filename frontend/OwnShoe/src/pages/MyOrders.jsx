@@ -1,5 +1,5 @@
+
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   ArrowLeft,
   Package,
@@ -10,9 +10,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "../api";
-
-const API_URL = `${API_BASE_URL}/api`;
+import api from "../api";
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -21,35 +19,30 @@ const MyOrders = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch User Orders
   const fetchOrders = async () => {
     try {
       setLoading(true);
       setError("");
 
-      /*
-        Change this if your localStorage key
-        for logged-in user is different.
-      */
       const storedUser = localStorage.getItem("ownshoe-user");
 
       if (!storedUser) {
         setError("Please login to view your orders.");
-        setLoading(false);
         return;
       }
 
       const user = JSON.parse(storedUser);
-
       const userId = user?._id || user?.id;
 
       if (!userId) {
         setError("User information not found. Please login again.");
-        setLoading(false);
         return;
       }
 
-      const response = await axios.get(
-        `${API_URL}/api/orders/user/${userId}`
+      // API request
+      const response = await api.get(
+        `/api/orders/user/${userId}`
       );
 
       setOrders(response.data.orders || []);
@@ -58,7 +51,7 @@ const MyOrders = () => {
 
       setError(
         err.response?.data?.message ||
-          "Failed to load your orders."
+        "Failed to load your orders."
       );
     } finally {
       setLoading(false);
@@ -69,6 +62,7 @@ const MyOrders = () => {
     fetchOrders();
   }, []);
 
+  // Format Date
   const formatDate = (date) => {
     if (!date) return "-";
 
@@ -79,10 +73,12 @@ const MyOrders = () => {
     });
   };
 
+  // Format Price
   const formatPrice = (price) => {
     return `₹${Number(price || 0).toLocaleString("en-IN")}`;
   };
 
+  // Order Status Styling
   const getOrderStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case "delivered":
@@ -105,6 +101,7 @@ const MyOrders = () => {
     }
   };
 
+  // Payment Status Styling
   const getPaymentStatusClass = (status) => {
     switch (status?.toLowerCase()) {
       case "paid":
@@ -137,13 +134,9 @@ const MyOrders = () => {
 
         {/* HEADER */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <Package
-                size={19}
-                className="text-[#ac3400]"
-              />
+              <Package size={19} className="text-[#ac3400]" />
 
               <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#ac3400]">
                 Orders
@@ -171,13 +164,11 @@ const MyOrders = () => {
             />
             Refresh
           </button>
-
         </div>
 
         {/* LOADING */}
         {loading && (
           <div className="rounded-2xl border border-[#e1e3e4] bg-white px-6 py-16 text-center">
-
             <RefreshCw
               size={30}
               className="mx-auto mb-4 animate-spin text-[#ac3400]"
@@ -186,17 +177,13 @@ const MyOrders = () => {
             <p className="text-sm font-semibold text-gray-600">
               Loading your orders...
             </p>
-
           </div>
         )}
 
         {/* ERROR */}
         {!loading && error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-
-            <p className="font-bold text-red-600">
-              {error}
-            </p>
+            <p className="font-bold text-red-600">{error}</p>
 
             <button
               type="button"
@@ -205,19 +192,14 @@ const MyOrders = () => {
             >
               Login
             </button>
-
           </div>
         )}
 
-        {/* EMPTY */}
+        {/* EMPTY ORDERS */}
         {!loading && !error && orders.length === 0 && (
           <div className="rounded-2xl border border-[#e1e3e4] bg-white px-6 py-16 text-center">
-
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-              <ShoppingBag
-                size={28}
-                className="text-gray-400"
-              />
+              <ShoppingBag size={28} className="text-gray-400" />
             </div>
 
             <h2 className="text-xl font-extrabold text-black">
@@ -236,16 +218,13 @@ const MyOrders = () => {
             >
               Start Shopping
             </button>
-
           </div>
         )}
 
-        {/* ORDERS */}
+        {/* ORDERS LIST */}
         {!loading && !error && orders.length > 0 && (
           <div className="space-y-5">
-
             {orders.map((order) => {
-
               const totalAmount =
                 order.totalAmount ??
                 order.total ??
@@ -262,10 +241,8 @@ const MyOrders = () => {
                   key={order._id}
                   className="overflow-hidden rounded-2xl border border-[#e1e3e4] bg-white"
                 >
-
                   {/* ORDER HEADER */}
                   <div className="flex flex-col gap-4 border-b border-[#eeeeee] p-5 sm:flex-row sm:items-center sm:justify-between">
-
                     <div>
                       <div className="flex items-center gap-2">
                         <Package
@@ -279,12 +256,10 @@ const MyOrders = () => {
                       </div>
 
                       <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
-
                         <span className="flex items-center gap-1.5">
                           <Calendar size={14} />
                           {formatDate(
-                            order.createdAt ||
-                              order.orderDate
+                            order.createdAt || order.orderDate
                           )}
                         </span>
 
@@ -292,18 +267,16 @@ const MyOrders = () => {
                           <CreditCard size={14} />
                           {formatPrice(totalAmount)}
                         </span>
-
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-
                       <span
                         className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${getOrderStatusClass(
-                          order.status
+                          order.orderStatus || order.status
                         )}`}
                       >
-                        {order.status || "Pending"}
+                        {order.orderStatus || order.status || "Pending"}
                       </span>
 
                       <span
@@ -315,17 +288,13 @@ const MyOrders = () => {
                           ? "Not Paid"
                           : order.paymentStatus || "Pending"}
                       </span>
-
                     </div>
-
                   </div>
 
                   {/* PRODUCTS */}
                   <div className="divide-y divide-[#eeeeee]">
-
                     {orderItems.length > 0 ? (
                       orderItems.slice(0, 3).map((item, index) => {
-
                         const product =
                           item.product ||
                           item.productId ||
@@ -342,8 +311,7 @@ const MyOrders = () => {
                           product?.images?.[0] ||
                           product?.image;
 
-                        const quantity =
-                          item.quantity || 1;
+                        const quantity = item.quantity || 1;
 
                         const price =
                           item.price ||
@@ -352,17 +320,11 @@ const MyOrders = () => {
 
                         return (
                           <div
-                            key={
-                              item._id ||
-                              item.product ||
-                              index
-                            }
+                            key={item._id || index}
                             className="flex items-center gap-4 p-5"
                           >
-
                             {/* IMAGE */}
                             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#f5f5f5]">
-
                               {image ? (
                                 <img
                                   src={image}
@@ -375,21 +337,16 @@ const MyOrders = () => {
                                   className="text-gray-300"
                                 />
                               )}
-
                             </div>
 
                             {/* INFO */}
                             <div className="min-w-0 flex-1">
-
                               <h3 className="truncate text-sm font-bold text-black sm:text-base">
                                 {productName}
                               </h3>
 
                               <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">
-
-                                <span>
-                                  Qty: {quantity}
-                                </span>
+                                <span>Qty: {quantity}</span>
 
                                 {item.selectedSize && (
                                   <span>
@@ -402,15 +359,12 @@ const MyOrders = () => {
                                     Color: {item.color}
                                   </span>
                                 )}
-
                               </div>
 
                               <p className="mt-2 text-sm font-bold text-black">
                                 {formatPrice(price)}
                               </p>
-
                             </div>
-
                           </div>
                         );
                       })
@@ -419,7 +373,6 @@ const MyOrders = () => {
                         Order items unavailable.
                       </div>
                     )}
-
                   </div>
 
                   {/* MORE ITEMS */}
@@ -432,7 +385,6 @@ const MyOrders = () => {
 
                   {/* FOOTER */}
                   <div className="flex flex-col gap-4 border-t border-[#eeeeee] bg-[#fafafa] p-5 sm:flex-row sm:items-center sm:justify-between">
-
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
                         Order Total
@@ -453,16 +405,12 @@ const MyOrders = () => {
                       View Details
                       <ChevronRight size={17} />
                     </button>
-
                   </div>
-
                 </div>
               );
             })}
-
           </div>
         )}
-
       </div>
     </div>
   );
