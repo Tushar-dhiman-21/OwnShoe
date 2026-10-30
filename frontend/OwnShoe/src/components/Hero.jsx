@@ -17,7 +17,7 @@ function Hero() {
             {/* Small Label */}
             <div className="glass glass-hover mb-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold tracking-[0.18em] text-gray-950">
               <span className="h-2 w-2 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
-              NEW SEASON 2026
+              NEW SEASON {new Date().getFullYear()}
             </div>
 
             {/* Heading */}

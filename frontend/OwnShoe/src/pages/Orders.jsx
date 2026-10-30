@@ -15,6 +15,9 @@ import { api } from "../api";
 
 function Orders() {
   const { user, loading: authLoading } = useAuth();
+  console.log("Orders user:", user);
+console.log("Orders userId:", user?.id || user?._id || user?.userId);
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +30,8 @@ function Orders() {
   const fetchOrders = useCallback(async () => {
     if (!userId) {
       setOrders([]);
-      setLoading(false);
       setError("Please login to view your orders.");
+      setLoading(false);
       return;
     }
 
@@ -37,21 +40,31 @@ function Orders() {
       setError("");
 
       const response = await api.get(`/api/orders/user/${userId}`);
+      const data = response.data;
 
-      if (response.data.success) {
-        setOrders(
-          Array.isArray(response.data.orders) ? response.data.orders : [],
-        );
-      } else {
-        setOrders([]);
-        setError(response.data.message || "Unable to load orders.");
+      console.log("Orders API response:", data);
+
+      if (data?.success === false) {
+        throw new Error(data.message || "Unable to load orders.");
       }
+
+      // Support different backend response formats
+      const ordersList = Array.isArray(data)? data: Array.isArray(data?.orders)? data.orders: Array.isArray(data?.data)? data.data: [];
+
+      setOrders(ordersList);
     } catch (err) {
-      console.error("Fetch orders error:", err);
+      console.error("Fetch orders error:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
+
+      setOrders([]);
 
       setError(
         err.response?.data?.message ||
-          "Unable to load orders. Please try again.",
+          err.message ||
+          "Unable to load orders. Please try again."
       );
     } finally {
       setLoading(false);
@@ -59,15 +72,15 @@ function Orders() {
   }, [userId]);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    fetchOrders();
+    if (!authLoading) {
+      fetchOrders();
+    }
   }, [authLoading, fetchOrders]);
 
   // Cancel order
   const handleCancelOrder = async (orderId) => {
     const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this order?",
+      "Are you sure you want to cancel this order?"
     );
 
     if (!confirmCancel) return;
@@ -76,27 +89,39 @@ function Orders() {
       setCancellingId(orderId);
 
       const response = await api.put(`/api/orders/${orderId}/cancel`);
+      const data = response.data;
 
-      if (response.data.success) {
-        setOrders((previousOrders) =>
-          previousOrders.map((order) =>
-            order._id === orderId
-              ? {
-                  ...order,
-                  orderStatus: "cancelled",
-                }
-              : order,
-          ),
-        );
-      } else {
-        window.alert(response.data.message || "Failed to cancel order.");
+      console.log("Cancel order response:", data);
+
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to cancel order.");
       }
+
+      // Update status only after successful API response
+      setOrders((previousOrders) =>
+        previousOrders.map((order) =>
+          String(order._id) === String(orderId)
+            ? {
+                ...order,
+                ...(data?.order || {}),
+                orderStatus: data?.order?.orderStatus || "cancelled",
+              }
+            : order
+        )
+      );
+
+      window.alert(data?.message || "Order cancelled successfully.");
     } catch (err) {
-      console.error("Cancel order error:", err);
+      console.error("Cancel order error:", {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
 
       window.alert(
         err.response?.data?.message ||
-          "Failed to cancel order. Please try again.",
+          err.message ||
+          "Failed to cancel order. Please try again."
       );
     } finally {
       setCancellingId(null);
@@ -122,7 +147,7 @@ function Orders() {
 
   // Order status styling
   const getStatusStyle = (status) => {
-    switch (status) {
+    switch (String(status || "").toLowerCase()) {
       case "placed":
         return "bg-blue-50 text-blue-700";
       case "confirmed":
@@ -142,7 +167,7 @@ function Orders() {
 
   // Payment status styling
   const getPaymentStatusStyle = (status) => {
-    switch (status) {
+    switch (String(status || "").toLowerCase()) {
       case "paid":
         return "text-green-600";
       case "failed":
@@ -158,7 +183,9 @@ function Orders() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <LoaderCircle size={35} className="animate-spin text-black" />
-          <p className="text-gray-600 font-medium">Loading your orders...</p>
+          <p className="text-gray-600 font-medium">
+            Loading your orders...
+          </p>
         </div>
       </div>
     );
@@ -173,7 +200,9 @@ function Orders() {
             <ShoppingBag size={34} className="text-gray-500" />
           </div>
 
-          <h1 className="text-2xl font-bold text-black mb-2">Please Login</h1>
+          <h1 className="text-2xl font-bold text-black mb-2">
+            Please Login
+          </h1>
 
           <p className="text-gray-500 mb-6">
             Login to view your orders and track your purchases.
@@ -271,8 +300,8 @@ function Orders() {
             </h2>
 
             <p className="text-gray-500 max-w-md mx-auto mb-7">
-              You haven't placed any orders yet. Explore our collection and find
-              your next pair.
+              You haven't placed any orders yet. Explore our collection and
+              find your next pair.
             </p>
 
             <Link
@@ -297,10 +326,7 @@ function Orders() {
                           Order ID
                         </p>
                         <p className="font-bold text-black text-sm break-all">
-                          #
-                          {String(order._id || "")
-                            .slice(-8)
-                            .toUpperCase()}
+                          #{String(order._id || "").slice(-8).toUpperCase()}
                         </p>
                       </div>
 
@@ -337,59 +363,64 @@ function Orders() {
 
                 <div className="p-5 sm:p-6">
                   <div className="space-y-5">
-                    {(order.items || []).map((item, index) => (
-                      <div
-                        key={`${order._id}-${index}`}
-                        className="flex flex-col sm:flex-row gap-4 pb-5 last:pb-0 border-b last:border-b-0 border-gray-100"
-                      >
-                        <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name || "Shoe"}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ShoppingBag
-                                size={28}
-                                className="text-gray-400"
+                    {(Array.isArray(order.items) ? order.items : []).map(
+                      (item, index) => (
+                        <div
+                          key={`${order._id}-${index}`}
+                          className="flex flex-col sm:flex-row gap-4 pb-5 last:pb-0 border-b last:border-b-0 border-gray-100"
+                        >
+                          <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name || "Shoe"}
+                                className="w-full h-full object-cover"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
                               />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1">
-                          <h3 className="font-bold text-lg text-black">
-                            {item.name || "Shoe"}
-                          </h3>
-
-                          <div className="flex flex-wrap gap-x-5 gap-y-2 mt-2 text-sm text-gray-600">
-                            <span>
-                              Size:{" "}
-                              <strong className="text-black">
-                                {item.selectedSize ?? item.size ?? "N/A"}
-                              </strong>
-                            </span>
-
-                            <span>
-                              Quantity:{" "}
-                              <strong className="text-black">
-                                {item.quantity ?? 1}
-                              </strong>
-                            </span>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ShoppingBag
+                                  size={28}
+                                  className="text-gray-400"
+                                />
+                              </div>
+                            )}
                           </div>
 
-                          <p className="text-lg font-bold text-black mt-3">
-                            ₹
-                            {(
-                              Number(item.price || 0) *
-                              Number(item.quantity || 1)
-                            ).toLocaleString("en-IN")}
-                          </p>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg text-black">
+                              {item.name || "Shoe"}
+                            </h3>
+
+                            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-2 text-sm text-gray-600">
+                              <span>
+                                Size:{" "}
+                                <strong className="text-black">
+                                  {item.selectedSize ?? item.size ?? "N/A"}
+                                </strong>
+                              </span>
+
+                              <span>
+                                Quantity:{" "}
+                                <strong className="text-black">
+                                  {item.quantity ?? 1}
+                                </strong>
+                              </span>
+                            </div>
+
+                            <p className="text-lg font-bold text-black mt-3">
+                              ₹
+                              {(
+                                Number(item.price || 0) *
+                                Number(item.quantity || 1)
+                              ).toLocaleString("en-IN")}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-7 pt-6 border-t border-gray-200">
@@ -437,7 +468,9 @@ function Orders() {
                         </div>
 
                         <div className="flex justify-between gap-4">
-                          <span className="text-gray-500">Payment Status</span>
+                          <span className="text-gray-500">
+                            Payment Status
+                          </span>
                           <span
                             className={`font-semibold capitalize ${getPaymentStatusStyle(order.paymentStatus)}`}
                           >
@@ -450,7 +483,7 @@ function Orders() {
                           <span className="font-semibold text-black">
                             ₹
                             {Number(order.subtotal || 0).toLocaleString(
-                              "en-IN",
+                              "en-IN"
                             )}
                           </span>
                         </div>
@@ -461,7 +494,7 @@ function Orders() {
                             {Number(order.shippingCharge || 0) === 0
                               ? "FREE"
                               : `₹${Number(order.shippingCharge).toLocaleString(
-                                  "en-IN",
+                                  "en-IN"
                                 )}`}
                           </span>
                         </div>
@@ -471,7 +504,7 @@ function Orders() {
                           <span className="font-black text-lg text-black">
                             ₹
                             {Number(order.totalAmount || 0).toLocaleString(
-                              "en-IN",
+                              "en-IN"
                             )}
                           </span>
                         </div>

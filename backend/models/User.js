@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
@@ -28,7 +29,23 @@ const userSchema = new mongoose.Schema(
       default: "customer",
     },
 
-    // Forgot Password OTP
+    // Email Verification
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    emailVerificationOTP: {
+      type: String,
+      default: null,
+    },
+
+    emailVerificationOTPExpires: {
+      type: Date,
+      default: null,
+    },
+
+    // Forgot Password
     resetPasswordOTP: {
       type: String,
       default: null,

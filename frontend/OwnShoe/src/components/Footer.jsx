@@ -1,236 +1,221 @@
 import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ShieldCheck,
+  Truck,
+  RefreshCw,
+  Headphones,
+ 
+} from "lucide-react";
 
 function Footer() {
+  const categories = [
+    "Sneakers",
+    "Running",
+    "Sports",
+    "Casual",
+    "Formal",
+    "Boots",
+    "Loafers",
+    "Sandals",
+    "Slides",
+    "High-Tops",
+    "Slip-Ons",
+    "Trainers",
+  ];
+
+  const accountLinks = [
+    { name: "My Profile", path: "/profile" },
+    { name: "My Orders", path: "/orders" },
+    { name: "My Wishlist", path: "/wishlist" },
+    { name: "Shopping Cart", path: "/cart" },
+    { name: "Login", path: "/login" },
+  ];
+
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="footer">
+    <footer className="own-footer">
+      {/* TOP SHIPPING STRIP */}
+      <div className="footer-top-strip">
+        <div className="footer-container footer-top-inner">
+          <span>
+            <Truck size={15} />
+            Free Express Shipping on Orders Above ₹2,000
+          </span>
 
-      <div className="container">
+          <span className="footer-top-right">
+            <ShieldCheck size={15} />
+            Secure Shopping Experience
+          </span>
+        </div>
+      </div>
 
-        <div className="footer-grid">
-
+      <div className="footer-container">
+        {/* MAIN FOOTER */}
+        <div className="footer-main-grid">
           {/* BRAND */}
-          <div className="footer-brand">
-
-            <Link
-              to="/"
-              className="logo footer-logo"
-            >
-              <span className="logo-mark">
-                O
-              </span>
+          <div className="footer-brand-section">
+            <Link to="/" className="footer-brand-logo">
+              <span className="footer-logo-mark">O</span>
 
               <span>
-                OwnShoe
+                Own<span>Shoe</span>
               </span>
             </Link>
 
-            <h3>
-              Your Shoe. Your Style.
-            </h3>
+            <h2>
+              YOUR SHOE.
+              <br />
+              <span>YOUR STYLE.</span>
+            </h2>
 
             <p>
-              High-performance silhouettes meet thoughtful
-              design. Footwear built for people who move
-              differently.
+              Discover footwear that matches your personality. From everyday
+              essentials to statement sneakers, find your perfect pair at
+              OwnShoe.
             </p>
 
-            <div className="payment-title">
-              VERIFIED & SECURE PAYMENTS
-            </div>
+            <Link to="/shop" className="footer-explore-link">
+              Explore Collection
+              <ArrowUpRight size={17} />
+            </Link>
 
-            <div className="payment-icons">
-              <span>UPI</span>
-              <span>VISA</span>
-              <span>MC</span>
-              <span>✓</span>
-            </div>
+            {/* PAYMENT INFORMATION */}
+            <div className="footer-payment-section">
+              <p>SECURE PAYMENT OPTIONS</p>
 
+              <div className="footer-payment-list">
+                <span>UPI</span>
+                <span>VISA</span>
+                <span>MC</span>
+                <span>COD</span>
+              </div>
+
+              <div className="footer-payment-note">
+                <ShieldCheck size={14} />
+                Secure payments through Razorpay
+              </div>
+            </div>
           </div>
 
           {/* SHOP */}
-          <div className="footer-column">
+          <div className="footer-link-column">
+            <h3>SHOP</h3>
 
-            <h4>
-              SHOP
-            </h4>
+            <Link to="/shop">All Products</Link>
 
-            <Link to="/shop?category=Sneakers">
-              Sneakers
-            </Link>
-
-            <Link to="/shop?category=Running">
-              Running
-            </Link>
-
-            <Link to="/shop?category=Training">
-              Training
-            </Link>
-
-            <Link to="/shop?category=Casual">
-              Casual
-            </Link>
-
-            <Link to="/shop?category=Formal">
-              Formal
-            </Link>
-
-            <Link to="/shop?filter=exclusive">
-              Exclusive Drops
-            </Link>
-
+            {categories.map((category) => (
+              <Link
+                key={category}
+                to={`/shop?category=${encodeURIComponent(category)}`}
+              >
+                {category}
+              </Link>
+            ))}
           </div>
 
-          {/* CUSTOMER CARE */}
-          <div className="footer-column">
+          {/* ACCOUNT */}
+          <div className="footer-link-column">
+            <h3>MY ACCOUNT</h3>
 
-            <h4>
-              CUSTOMER CARE
-            </h4>
-
-            <Link to="/track-order">
-              Track Order
-            </Link>
-
-            <Link to="/shipping">
-              Shipping & Delivery
-            </Link>
-
-            <Link to="/returns">
-              Returns & Exchanges
-            </Link>
-
-            <Link to="/size-guide">
-              Size Guide
-            </Link>
-
-            <Link to="/faq">
-              FAQs
-            </Link>
-
-            <Link to="/contact">
-              Contact Us
-            </Link>
-
+            {accountLinks.map((item) => (
+              <Link key={item.path} to={item.path}>
+                {item.name}
+              </Link>
+            ))}
           </div>
 
-          {/* COMPANY */}
-          <div className="footer-column">
+          {/* INFORMATION */}
+          <div className="footer-link-column">
+            <h3>INFORMATION</h3>
 
-            <h4>
-              COMPANY
-            </h4>
+            <Link to="/about">About OwnShoe</Link>
 
-            <Link to="/about">
-              About OwnShoe
-            </Link>
+            <Link to="/shop">Our Collection</Link>
 
-            <Link to="/sustainability">
-              Sustainability
-            </Link>
+            <Link to="/orders">Order Information</Link>
 
-            <Link to="/careers">
-              Careers
-            </Link>
-
-            <Link to="/press">
-              Press
-            </Link>
-
-            <Link to="/stores">
-              Store Locator
-            </Link>
-
+            <Link to="/profile">Account Details</Link>
           </div>
 
-          {/* FOOTER NEWSLETTER */}
-          <div className="footer-column footer-newsletter">
-
-            <h4>
-              STAY IN STEP
-            </h4>
+          {/* CUSTOMER SUPPORT */}
+          <div className="footer-support-column">
+            <h3>HERE TO HELP</h3>
 
             <p>
-              Be first in queue for limited silhouette runs
-              and bespoke drops.
+              Need help with your shopping experience? Manage your account and
+              orders directly.
             </p>
 
-            <form>
+            <Link to="/orders" className="footer-support-card">
+              <span className="footer-support-icon">
+                <Truck size={19} />
+              </span>
 
-              <input
-                type="email"
-                placeholder="Enter your email"
-              />
+              <span>
+                <strong>My Orders</strong>
+                <small>View your order details</small>
+              </span>
 
-              <button>
-                Subscribe
-              </button>
+              <ArrowUpRight size={17} />
+            </Link>
 
-            </form>
+            <Link to="/profile" className="footer-support-card">
+              <span className="footer-support-icon">
+                <Headphones size={19} />
+              </span>
 
-            <span className="follow-title">
-              FOLLOW THE ATELIER
-            </span>
+              <span>
+                <strong>My Account</strong>
+                <small>Manage your profile</small>
+              </span>
 
-            <div className="socials">
-
-              <a
-                href="#"
-                aria-label="Instagram"
-              >
-                IG
-              </a>
-
-              <a
-                href="#"
-                aria-label="Facebook"
-              >
-                FB
-              </a>
-
-              <a
-                href="#"
-                aria-label="Twitter"
-              >
-                X
-              </a>
-
-            </div>
-
+              <ArrowUpRight size={17} />
+            </Link>
           </div>
-
         </div>
 
-        {/* FOOTER BOTTOM */}
-        <div className="footer-bottom">
-
-          <span>
-            © 2025 OwnShoe Inc. All rights reserved.
-          </span>
+        {/* FOOTER HIGHLIGHTS */}
+        <div className="footer-benefits">
+          <div>
+            <Truck size={21} />
+            <span>
+              <strong>Free Express Shipping</strong>
+              <small>On orders above ₹2,000</small>
+            </span>
+          </div>
 
           <div>
-
-            <Link to="/privacy">
-              Privacy Policy
-            </Link>
-
-            <Link to="/terms">
-              Terms of Service
-            </Link>
-
-            <Link to="/security">
-              Security
-            </Link>
-
-            <Link to="/cookies">
-              Cookie Settings
-            </Link>
-
+            <ShieldCheck size={21} />
+            <span>
+              <strong>Secure Checkout</strong>
+              <small>Protected online payments</small>
+            </span>
           </div>
 
+          <div>
+            <RefreshCw size={21} />
+            <span>
+              <strong>Easy Order Access</strong>
+              <small>Track your orders from your account</small>
+            </span>
+          </div>
         </div>
 
-      </div>
+        {/* BOTTOM FOOTER */}
+        <div className="footer-bottom">
+          <p>© {currentYear} OwnShoe. All rights reserved.</p>
 
+          <Link to="/" className="footer-back-top">
+            BACK TO HOME
+            <ArrowUpRight size={14} />
+          </Link>
+
+          <p className="footer-made">OWN YOUR STYLE.</p>
+        </div>
+      </div>
     </footer>
   );
 }

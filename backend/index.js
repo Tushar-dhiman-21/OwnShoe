@@ -31,6 +31,7 @@ app.use(express.json());
 app.use(async (req, res, next) => {
   try {
     await connectDB();
+    console.log("Database connected successfully");
     next();
   } catch (error) {
     console.error("Database middleware error:", error.message);
