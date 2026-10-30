@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import {
   Package,
@@ -15,9 +16,6 @@ import { api } from "../api";
 
 function Orders() {
   const { user, loading: authLoading } = useAuth();
-  console.log("Orders user:", user);
-console.log("Orders userId:", user?.id || user?._id || user?.userId);
-console.log("API URL:", import.meta.env.VITE_API_URL);
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +37,8 @@ console.log("API URL:", import.meta.env.VITE_API_URL);
       setLoading(true);
       setError("");
 
-      const response = await api.get(`/api/orders/user/${userId}`);
+      // Removed duplicate /api
+      const response = await api.get(`/orders/user/${userId}`);
       const data = response.data;
 
       console.log("Orders API response:", data);
@@ -48,8 +47,13 @@ console.log("API URL:", import.meta.env.VITE_API_URL);
         throw new Error(data.message || "Unable to load orders.");
       }
 
-      // Support different backend response formats
-      const ordersList = Array.isArray(data)? data: Array.isArray(data?.orders)? data.orders: Array.isArray(data?.data)? data.data: [];
+      const ordersList = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.orders)
+        ? data.orders
+        : Array.isArray(data?.data)
+        ? data.data
+        : [];
 
       setOrders(ordersList);
     } catch (err) {
@@ -88,7 +92,8 @@ console.log("API URL:", import.meta.env.VITE_API_URL);
     try {
       setCancellingId(orderId);
 
-      const response = await api.put(`/api/orders/${orderId}/cancel`);
+      // Removed duplicate /api
+      const response = await api.put(`/orders/${orderId}/cancel`);
       const data = response.data;
 
       console.log("Cancel order response:", data);
@@ -97,7 +102,6 @@ console.log("API URL:", import.meta.env.VITE_API_URL);
         throw new Error(data.message || "Failed to cancel order.");
       }
 
-      // Update status only after successful API response
       setOrders((previousOrders) =>
         previousOrders.map((order) =>
           String(order._id) === String(orderId)
